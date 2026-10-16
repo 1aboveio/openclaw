@@ -64,6 +64,8 @@ Telegraph style. Root rules only. Read scoped `AGENTS.md` before subtree work.
 
 ## GitHub / CI
 
+- Runner routing: [CONTRIBUTING.md - Self-Hosted Runners](CONTRIBUTING.md#self-hosted-runners). Crabbox uses a lease-selected label, not the org Docker fleet; preserve hosted/Blacksmith placement.
+
 - Triage: list first, hydrate few. Use bounded `gh --json --jq`; avoid repeated full comment scans.
 - Automatic PR/issue discovery: skip maintainer-owned items unless directly relevant. Do not comment, close, label, retitle, rebase, fix up, or land them without Peter asking.
 - PR scan/triage: no unsolicited PR comments/reviews. Report in chat only unless explicitly asked, or a close/duplicate action needs a reason comment.
