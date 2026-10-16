@@ -127,6 +127,19 @@ For coordinated change sets that genuinely need more than 20 PRs, join the **#cl
 - Use American English spelling and grammar in code, comments, docs, and UI strings
 - Do not edit files covered by `CODEOWNERS` security ownership unless a listed owner explicitly asked for the change or is already reviewing it with you. Treat those paths as restricted review surfaces, not opportunistic cleanup targets.
 
+## Self-Hosted Runners
+
+OpenClaw's custom self-hosted route is [Crabbox Hydrate](.github/workflows/crabbox-hydrate.yml), a manual `workflow_dispatch` job. It is **not** the `1aboveio/github-runner` org Docker fleet. Do not replace its routing with `[self-hosted, linux, x64, docker]`, add `premium`, or assume that fleet's Podman socket, LAN proxies, browser availability, or 8-CPU/16-GiB slot quotas.
+
+- Hydration selects `runs-on: [self-hosted, "${{ inputs.crabbox_runner_label }}"]`. Use the dynamic label for the intended Crabbox lease, with its `crabbox_id`; the optional `ref` selects the checkout and otherwise falls back to `github.ref`. A label with no matching online runner will remain queued. Keep lease identity and source ref separate, and verify both before dispatching a secret-bearing hydration job; do not hydrate untrusted fork code.
+- The job sets up Node/pnpm and Docker, hydrates provider environment helpers, and records readiness under `$HOME/.crabbox/actions/<crabbox_id>.env` with workspace, run, job, env-helper, and service information. This is a warmed interactive lease, not a disposable org-fleet test slot. Preserve its intentional hydration state; do not apply runner-wide cleanup recipes to it.
+- `crabbox_job` defaults to `hydrate`; `crabbox_keep_alive_minutes` defaults to 90. The job has `timeout-minutes: 120`, and its keepalive loop exits when the deadline expires or `$HOME/.crabbox/actions/<crabbox_id>.stop` exists. Keep command/keepalive budgets within that job limit, and release leases you created when finished.
+- For new or changed self-hosted jobs, set an explicit per-job timeout and scope checkout cleanup to `GITHUB_WORKSPACE` before checkout if that workspace is reused. Use `persist-credentials: false` on checkout and always clean up job-owned processes, containers, and temporary credential files. The existing hydration checkout does not yet set that flag; this documentation does not change its implementation. Any future PR-triggered self-hosted job must reject fork code at job level before runner allocation, not in a step.
+- Preserve the mixed runner model in [CI](.github/workflows/ci.yml): GitHub-hosted `ubuntu-24.04` jobs coexist with Blacksmith labels and platform-specific Windows/macOS jobs. Many Blacksmith selections apply only when `github.repository == 'openclaw/openclaw'`, with GitHub-hosted fallbacks for forks. Do not erase those repository checks or treat every Docker-using job as an org-fleet job. The input-selected Windows Testbox workflows use their own hosted/Blacksmith label choices, not Crabbox labels.
+- Keep [the real npm publish job](.github/workflows/openclaw-npm-release.yml) on GitHub-hosted `ubuntu-latest` for npm trusted publishing and provenance. Blacksmith Testbox remains the default for broad maintainer validation when available, while Crabbox is the preferred live scenario environment for the matching OS; follow [AGENTS.md](AGENTS.md#commands) for their existing lifecycle and validation guidance.
+
+See [CI pipeline runners](docs/ci.md#runners) for the broader job/runner map. Routing or infrastructure changes need their own owner decision; documenting this custom lane does not migrate hosted or Blacksmith workflows.
+
 ## Review Conversations Are Author-Owned
 
 If a review bot leaves review conversations on your PR, you are expected to handle the follow-through:
